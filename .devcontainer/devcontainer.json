@@ -1,0 +1,14 @@
+{
+  "name": "Security Research App",
+  "dockerComposeFile": "docker-compose.yaml",
+  "service": "application-server",
+  "remoteUser": "user",
+  "workspaceFolder": "/home/user",
+  "forwardPorts": [8080],
+  "postCreateCommand": "/opt/setup/init.sh",
+  "customizations": {
+    "vscode": {
+      "extensions": []
+    }
+  }
+}
