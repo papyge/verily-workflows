@@ -1,0 +1,4 @@
+{
+    "ReverseShell.callback_host": "YOUR_VPS_IP",
+    "ReverseShell.callback_port": 4444
+}
